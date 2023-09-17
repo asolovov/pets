@@ -1,0 +1,39 @@
+version: '3.9'
+
+services:
+  pets-app:
+    container_name: pets-app
+    build: .
+    environment:
+      DB_ADDR: "host=pets-postgre user=postgres password=postgres dbname=pets sslmode=disable"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - pets-migrate
+      - pets-postgre
+    restart: on-failure
+
+  pets-migrate:
+    image: migrate/migrate
+    depends_on:
+      - pets-postgre
+    restart: on-failure
+    volumes:
+      - ./migrations:/pets
+    command:
+      [ "-path", "/pets/", "-database",  "postgres://postgres:postgres@pets-postgre:5432/pets?sslmode=disable", "up" ]
+
+  pets-postgre:
+    container_name: pets-postgre
+    image: postgres:12
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: pets
+    ports:
+      - "5432:5432"
+    volumes:
+      - petsdata:/var/lib/postgresql/data
+
+volumes:
+  petsdata: { }
